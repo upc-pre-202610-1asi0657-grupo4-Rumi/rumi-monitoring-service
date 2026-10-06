@@ -1,0 +1,16 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "Rumi Monitoring Service API",
+        "description": "REST API of the Structural Monitoring bounded context: sensor readings and the digital twin. No REST endpoint is implemented yet; the service currently publishes the SensorReadingRecorded event over RabbitMQ.",
+        "version": "0.1.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost:8082",
+            "description": "Generated server url"
+        }
+    ],
+    "paths": {},
+    "components": {}
+}
