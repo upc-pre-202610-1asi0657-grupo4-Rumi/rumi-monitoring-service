@@ -11,4 +11,7 @@ public interface SensorReadingRepository {
 
     /** The most recent reading of every zone of the building, ordered by zone. */
     List<SensorReading> findLatestPerZone(UUID buildingId);
+
+    /** Readings of one zone of the building, newest first, at most {@code limit} of them. */
+    List<SensorReading> findByZone(UUID buildingId, String zone, int limit);
 }

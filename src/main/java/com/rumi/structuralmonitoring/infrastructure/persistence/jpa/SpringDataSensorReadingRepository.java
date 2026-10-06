@@ -1,5 +1,6 @@
 package com.rumi.structuralmonitoring.infrastructure.persistence.jpa;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -19,4 +20,10 @@ public interface SpringDataSensorReadingRepository
             order by r.zone, r.sensorId
             """)
     List<SensorReadingEntity> findLatestPerZone(@Param("buildingId") UUID buildingId);
+
+    List<SensorReadingEntity> findByBuildingIdAndZoneOrderByTimestampDesc(
+            UUID buildingId,
+            String zone,
+            Pageable pageable
+    );
 }

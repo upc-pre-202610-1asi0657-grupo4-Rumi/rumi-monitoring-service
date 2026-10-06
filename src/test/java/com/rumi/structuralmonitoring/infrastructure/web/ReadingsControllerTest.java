@@ -78,4 +78,83 @@ class ReadingsControllerTest {
                 .andExpect(jsonPath("$.detail").value("buildingId must be a valid UUID"));
         verifyNoInteractions(applicationService);
     }
+
+    @Test
+    void returnsTheReadingsOfAZoneWithTheDefaultLimit() throws Exception {
+        UUID id = UUID.fromString("e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30");
+        when(applicationService.getReadingsByZone(BUILDING_ID, "FLOOR-3-NORTH", 100)).thenReturn(List.of(
+                new SensorReading(id, SENSOR_ID, BUILDING_ID, "FLOOR-3-NORTH",
+                        Instant.parse("2026-10-06T15:30:00Z"), new SensorMeasurement(0.42, null, 1.2))));
+
+        mockMvc.perform(get("/api/v1/readings")
+                        .param("buildingId", OpenApiExamples.BUILDING_ID)
+                        .param("zone", "FLOOR-3-NORTH"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(id.toString()))
+                .andExpect(jsonPath("$[0].sensorId").value(OpenApiExamples.SENSOR_ID))
+                .andExpect(jsonPath("$[0].zone").value("FLOOR-3-NORTH"))
+                .andExpect(jsonPath("$[0].timestamp").value("2026-10-06T15:30:00Z"))
+                .andExpect(jsonPath("$[0].vibration").value(0.42))
+                .andExpect(jsonPath("$[0].inclination").isEmpty())
+                .andExpect(jsonPath("$[0].displacement").value(1.2));
+    }
+
+    @Test
+    void passesTheRequestedLimit() throws Exception {
+        when(applicationService.getReadingsByZone(BUILDING_ID, "FLOOR-3-NORTH", 500)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/readings")
+                        .param("buildingId", OpenApiExamples.BUILDING_ID)
+                        .param("zone", "FLOOR-3-NORTH")
+                        .param("limit", "500"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("[]"));
+    }
+
+    @Test
+    void returns400WhenZoneIsMissing() throws Exception {
+        mockMvc.perform(get("/api/v1/readings").param("buildingId", OpenApiExamples.BUILDING_ID))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("zone is required"));
+        verifyNoInteractions(applicationService);
+    }
+
+    @Test
+    void returns400WhenZoneIsBlank() throws Exception {
+        mockMvc.perform(get("/api/v1/readings")
+                        .param("buildingId", OpenApiExamples.BUILDING_ID)
+                        .param("zone", " "))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("zone is required"));
+        verifyNoInteractions(applicationService);
+    }
+
+    @Test
+    void returns400WhenLimitIsOutOfRange() throws Exception {
+        mockMvc.perform(get("/api/v1/readings")
+                        .param("buildingId", OpenApiExamples.BUILDING_ID)
+                        .param("zone", "FLOOR-3-NORTH")
+                        .param("limit", "501"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("limit must be between 1 and 500"));
+        verifyNoInteractions(applicationService);
+    }
+
+    @Test
+    void returns400WhenLimitIsNotANumber() throws Exception {
+        mockMvc.perform(get("/api/v1/readings")
+                        .param("buildingId", OpenApiExamples.BUILDING_ID)
+                        .param("zone", "FLOOR-3-NORTH")
+                        .param("limit", "ten"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("limit must be a number"));
+    }
+
+    @Test
+    void returns400WhenBuildingIdIsMissingFromTheZoneQuery() throws Exception {
+        mockMvc.perform(get("/api/v1/readings").param("zone", "FLOOR-3-NORTH"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value("buildingId is required"));
+    }
 }

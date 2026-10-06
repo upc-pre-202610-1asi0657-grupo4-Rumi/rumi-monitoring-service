@@ -2,6 +2,7 @@ package com.rumi.structuralmonitoring.infrastructure.persistence.jpa;
 
 import com.rumi.structuralmonitoring.domain.model.SensorReading;
 import com.rumi.structuralmonitoring.domain.repository.SensorReadingRepository;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
 import java.util.LinkedHashMap;
@@ -31,5 +32,14 @@ public class TimescaleSensorReadingRepository implements SensorReadingRepository
                 .map(SensorReadingEntity::toDomain)
                 .forEach(reading -> latestByZone.putIfAbsent(reading.getZone(), reading));
         return List.copyOf(latestByZone.values());
+    }
+
+    @Override
+    public List<SensorReading> findByZone(UUID buildingId, String zone, int limit) {
+        return springDataRepository
+                .findByBuildingIdAndZoneOrderByTimestampDesc(buildingId, zone, PageRequest.of(0, limit))
+                .stream()
+                .map(SensorReadingEntity::toDomain)
+                .toList();
     }
 }

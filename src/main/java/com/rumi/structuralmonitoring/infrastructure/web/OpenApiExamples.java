@@ -88,6 +88,46 @@ public final class OpenApiExamples {
               "instance": "/api/v1/readings/latest"
             }""";
 
+    public static final String ZONE_READINGS_RESPONSE = """
+            [
+              {
+                "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.42,
+                "inclination": 0.8,
+                "displacement": 1.2
+              },
+              {
+                "id": "a1d9f6c3-7e2b-4b05-8c4d-3f6a9e2b1c88",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:29:00Z",
+                "vibration": 0.18,
+                "inclination": 0.7,
+                "displacement": 1.1
+              }
+            ]""";
+
+    public static final String ERROR_MISSING_ZONE = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "zone is required",
+              "instance": "/api/v1/readings"
+            }""";
+
+    public static final String ERROR_INVALID_LIMIT = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "limit must be between 1 and 500",
+              "instance": "/api/v1/readings"
+            }""";
+
     private OpenApiExamples() {
     }
 }

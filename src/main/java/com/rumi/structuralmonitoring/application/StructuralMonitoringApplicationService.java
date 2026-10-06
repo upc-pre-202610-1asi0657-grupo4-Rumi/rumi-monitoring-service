@@ -14,6 +14,8 @@ import java.util.UUID;
 @Service
 public class StructuralMonitoringApplicationService {
 
+    public static final int MAX_READINGS_LIMIT = 500;
+
     private final SensorReadingRepository readingRepository;
     private final SensorReadingRecordedPublisher eventPublisher;
 
@@ -51,5 +53,13 @@ public class StructuralMonitoringApplicationService {
     /** US09: current state of the building, one reading per zone. Empty if the building has no readings. */
     public List<SensorReading> getLatestReadingsByZone(UUID buildingId) {
         return readingRepository.findLatestPerZone(buildingId);
+    }
+
+    /** US09: readings of one zone, newest first. */
+    public List<SensorReading> getReadingsByZone(UUID buildingId, String zone, int limit) {
+        if (limit < 1 || limit > MAX_READINGS_LIMIT) {
+            throw new IllegalArgumentException("limit must be between 1 and " + MAX_READINGS_LIMIT);
+        }
+        return readingRepository.findByZone(buildingId, zone, limit);
     }
 }

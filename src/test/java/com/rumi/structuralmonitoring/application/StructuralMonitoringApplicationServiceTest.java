@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -73,5 +74,21 @@ class StructuralMonitoringApplicationServiceTest {
         when(repository.findLatestPerZone(BUILDING_ID)).thenReturn(List.of(reading));
 
         assertThat(service.getLatestReadingsByZone(BUILDING_ID)).containsExactly(reading);
+    }
+
+    @Test
+    void returnsTheReadingsOfAZone() {
+        SensorReading reading = SensorReading.record(
+                SENSOR_ID, BUILDING_ID, "FLOOR-3-NORTH", TIMESTAMP, new SensorMeasurement(0.42, 0.8, 1.2));
+        when(repository.findByZone(BUILDING_ID, "FLOOR-3-NORTH", 100)).thenReturn(List.of(reading));
+
+        assertThat(service.getReadingsByZone(BUILDING_ID, "FLOOR-3-NORTH", 100)).containsExactly(reading);
+    }
+
+    @Test
+    void rejectsALimitOutOfRange() {
+        assertThatThrownBy(() -> service.getReadingsByZone(BUILDING_ID, "FLOOR-3-NORTH", 501))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("limit must be between 1 and 500");
     }
 }

@@ -106,6 +106,21 @@ class TimescaleSensorReadingRepositoryTest {
         assertThat(repository.findLatestPerZone(UUID.randomUUID())).isEmpty();
     }
 
+    @Test
+    void findsTheReadingsOfAZoneNewestFirstUpToTheLimit() {
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:00:00Z", 0.10);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:30:00Z", 0.42);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:20:00Z", 0.30);
+        save(BUILDING_ID, "FLOOR-2-NORTH", "2026-10-06T15:40:00Z", 0.50);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<SensorReading> readings = repository.findByZone(BUILDING_ID, "FLOOR-3-NORTH", 2);
+
+        assertThat(readings).extracting(SensorReading::getTimestamp).containsExactly(
+                Instant.parse("2026-10-06T15:30:00Z"), Instant.parse("2026-10-06T15:20:00Z"));
+    }
+
     private void save(UUID buildingId, String zone, String timestamp, double vibration) {
         repository.save(SensorReading.record(
                 UUID.randomUUID(), buildingId, zone, Instant.parse(timestamp),
