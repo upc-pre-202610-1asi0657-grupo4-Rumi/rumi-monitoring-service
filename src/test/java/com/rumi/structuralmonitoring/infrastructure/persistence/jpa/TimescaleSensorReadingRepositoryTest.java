@@ -121,6 +121,24 @@ class TimescaleSensorReadingRepositoryTest {
                 Instant.parse("2026-10-06T15:30:00Z"), Instant.parse("2026-10-06T15:20:00Z"));
     }
 
+    @Test
+    void findsTheHistoryOfTheBuildingOldestFirstWithInclusiveBounds() {
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T14:59:59Z", 0.01);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T16:00:00Z", 0.60);
+        save(BUILDING_ID, "FLOOR-2-NORTH", "2026-10-06T15:30:00Z", 0.30);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:00:00Z", 0.10);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T16:00:01Z", 0.70);
+        save(UUID.randomUUID(), "FLOOR-3-NORTH", "2026-10-06T15:30:00Z", 0.99);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<SensorReading> history = repository.findHistory(
+                BUILDING_ID, Instant.parse("2026-10-06T15:00:00Z"), Instant.parse("2026-10-06T16:00:00Z"));
+
+        assertThat(history).extracting(reading -> reading.getMeasurement().vibration())
+                .containsExactly(0.10, 0.30, 0.60);
+    }
+
     private void save(UUID buildingId, String zone, String timestamp, double vibration) {
         repository.save(SensorReading.record(
                 UUID.randomUUID(), buildingId, zone, Instant.parse(timestamp),

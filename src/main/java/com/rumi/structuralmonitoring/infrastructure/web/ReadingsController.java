@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -147,6 +148,66 @@ public class ReadingsController {
             int limit
     ) {
         return applicationService.getReadingsByZone(buildingId, zone, limit).stream()
+                .map(ReadingResponse::fromDomain)
+                .toList();
+    }
+
+    @GetMapping("/history")
+    @Operation(
+            summary = "Get the readings history of a building",
+            description = "US10. Returns every reading of the building taken between from and to, both "
+                    + "inclusive, oldest first. Both bounds are ISO-8601 instants in UTC."
+    )
+    @ApiResponse(
+            responseCode = "200",
+            description = "Readings in the range, oldest first (empty list if there are none)",
+            content = @Content(
+                    mediaType = MediaType.APPLICATION_JSON_VALUE,
+                    array = @ArraySchema(schema = @Schema(implementation = ReadingResponse.class)),
+                    examples = @ExampleObject(
+                            name = "history",
+                            summary = "Readings between 15:00 and 16:00 UTC",
+                            value = OpenApiExamples.HISTORY_RESPONSE
+                    )
+            )
+    )
+    @ApiResponse(
+            responseCode = "400",
+            description = "A parameter is missing or malformed, or from is after to",
+            content = @Content(
+                    mediaType = OpenApiExamples.PROBLEM_JSON,
+                    schema = @Schema(implementation = ProblemDetail.class),
+                    examples = {
+                            @ExampleObject(
+                                    name = "missingFrom",
+                                    summary = "from is missing",
+                                    value = OpenApiExamples.ERROR_MISSING_FROM
+                            ),
+                            @ExampleObject(
+                                    name = "malformedTo",
+                                    summary = "to is not an ISO-8601 instant",
+                                    value = OpenApiExamples.ERROR_MALFORMED_TO
+                            ),
+                            @ExampleObject(
+                                    name = "reversedRange",
+                                    summary = "from is after to",
+                                    value = OpenApiExamples.ERROR_REVERSED_RANGE
+                            )
+                    }
+            )
+    )
+    public List<ReadingResponse> getHistory(
+            @Parameter(description = "Building whose readings are queried", required = true,
+                    example = OpenApiExamples.BUILDING_ID)
+            @RequestParam UUID buildingId,
+            @Parameter(description = "Start of the range, inclusive (ISO-8601 instant)", required = true,
+                    example = "2026-10-06T15:00:00Z")
+            @RequestParam Instant from,
+            @Parameter(description = "End of the range, inclusive (ISO-8601 instant)", required = true,
+                    example = "2026-10-06T16:00:00Z")
+            @RequestParam Instant to
+    ) {
+        return applicationService.getHistory(buildingId, from, to).stream()
                 .map(ReadingResponse::fromDomain)
                 .toList();
     }

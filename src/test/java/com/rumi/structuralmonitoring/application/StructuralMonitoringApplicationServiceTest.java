@@ -88,7 +88,33 @@ class StructuralMonitoringApplicationServiceTest {
     @Test
     void rejectsALimitOutOfRange() {
         assertThatThrownBy(() -> service.getReadingsByZone(BUILDING_ID, "FLOOR-3-NORTH", 501))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidQueryException.class)
                 .hasMessage("limit must be between 1 and 500");
+    }
+
+    @Test
+    void returnsTheHistoryOfTheBuilding() {
+        Instant from = Instant.parse("2026-10-06T15:00:00Z");
+        Instant to = Instant.parse("2026-10-06T16:00:00Z");
+        SensorReading reading = SensorReading.record(
+                SENSOR_ID, BUILDING_ID, "FLOOR-3-NORTH", TIMESTAMP, new SensorMeasurement(0.42, 0.8, 1.2));
+        when(repository.findHistory(BUILDING_ID, from, to)).thenReturn(List.of(reading));
+
+        assertThat(service.getHistory(BUILDING_ID, from, to)).containsExactly(reading);
+    }
+
+    @Test
+    void acceptsARangeOfASingleInstant() {
+        when(repository.findHistory(BUILDING_ID, TIMESTAMP, TIMESTAMP)).thenReturn(List.of());
+
+        assertThat(service.getHistory(BUILDING_ID, TIMESTAMP, TIMESTAMP)).isEmpty();
+    }
+
+    @Test
+    void rejectsARangeWhoseStartIsAfterItsEnd() {
+        assertThatThrownBy(() -> service.getHistory(
+                BUILDING_ID, Instant.parse("2026-10-06T16:00:00Z"), Instant.parse("2026-10-06T15:00:00Z")))
+                .isInstanceOf(InvalidQueryException.class)
+                .hasMessage("from must not be after to");
     }
 }

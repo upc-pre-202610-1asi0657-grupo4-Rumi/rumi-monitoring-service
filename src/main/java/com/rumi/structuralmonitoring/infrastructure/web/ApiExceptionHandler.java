@@ -2,6 +2,7 @@ package com.rumi.structuralmonitoring.infrastructure.web;
 
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
+import com.rumi.structuralmonitoring.application.InvalidQueryException;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
@@ -31,8 +32,8 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgument(IllegalArgumentException exception) {
+    @ExceptionHandler(InvalidQueryException.class)
+    public ProblemDetail handleInvalidQuery(InvalidQueryException exception) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, exception.getMessage());
     }
 

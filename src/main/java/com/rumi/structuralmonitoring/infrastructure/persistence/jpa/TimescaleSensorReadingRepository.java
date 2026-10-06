@@ -5,6 +5,7 @@ import com.rumi.structuralmonitoring.domain.repository.SensorReadingRepository;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,15 @@ public class TimescaleSensorReadingRepository implements SensorReadingRepository
     public List<SensorReading> findByZone(UUID buildingId, String zone, int limit) {
         return springDataRepository
                 .findByBuildingIdAndZoneOrderByTimestampDesc(buildingId, zone, PageRequest.of(0, limit))
+                .stream()
+                .map(SensorReadingEntity::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<SensorReading> findHistory(UUID buildingId, Instant from, Instant to) {
+        return springDataRepository
+                .findByBuildingIdAndTimestampBetweenOrderByTimestampAscZoneAsc(buildingId, from, to)
                 .stream()
                 .map(SensorReadingEntity::toDomain)
                 .toList();

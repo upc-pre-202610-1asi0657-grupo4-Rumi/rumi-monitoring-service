@@ -8,6 +8,7 @@ import com.rumi.structuralmonitoring.domain.repository.SensorReadingRepository;
 import com.rumi.structuralmonitoring.infrastructure.messaging.rabbitmq.SensorReadingRecordedPublisher;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -58,8 +59,16 @@ public class StructuralMonitoringApplicationService {
     /** US09: readings of one zone, newest first. */
     public List<SensorReading> getReadingsByZone(UUID buildingId, String zone, int limit) {
         if (limit < 1 || limit > MAX_READINGS_LIMIT) {
-            throw new IllegalArgumentException("limit must be between 1 and " + MAX_READINGS_LIMIT);
+            throw new InvalidQueryException("limit must be between 1 and " + MAX_READINGS_LIMIT);
         }
         return readingRepository.findByZone(buildingId, zone, limit);
+    }
+
+    /** US10: readings of the building between from and to (both inclusive), oldest first. */
+    public List<SensorReading> getHistory(UUID buildingId, Instant from, Instant to) {
+        if (from.isAfter(to)) {
+            throw new InvalidQueryException("from must not be after to");
+        }
+        return readingRepository.findHistory(buildingId, from, to);
     }
 }
