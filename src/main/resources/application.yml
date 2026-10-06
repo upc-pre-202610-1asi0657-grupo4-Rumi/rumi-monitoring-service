@@ -9,15 +9,21 @@ spring:
     port: ${RABBITMQ_PORT:5672}
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
-
-# This service owns sensorreadingsdb (TimescaleDB on PostgreSQL). It has no persistent
-# entities yet, so no connection is opened; these settings become spring.datasource
-# when the readings are persisted.
-rumi:
+  # This service owns sensorreadingsdb (TimescaleDB on PostgreSQL).
   datasource:
     url: ${MONITORING_DB_URL:jdbc:postgresql://localhost:5432/sensorreadingsdb}
     username: ${MONITORING_DB_USERNAME:postgres}
     password: ${MONITORING_DB_PASSWORD:postgres}
+  jpa:
+    open-in-view: false
+    # No migration tool yet: Hibernate keeps the schema up to date. Converting
+    # sensor_readings into a TimescaleDB hypertable is a manual step for now.
+    hibernate:
+      ddl-auto: update
+
+rumi:
+  messaging:
+    enabled: ${MESSAGING_ENABLED:true}
 
 springdoc:
   api-docs:

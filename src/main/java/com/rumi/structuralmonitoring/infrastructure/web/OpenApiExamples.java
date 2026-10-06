@@ -1,0 +1,182 @@
+package com.rumi.structuralmonitoring.infrastructure.web;
+
+/**
+ * Example payloads shown in the OpenAPI documentation. They use the sample building and
+ * sensor of the development profile.
+ */
+public final class OpenApiExamples {
+
+    public static final String BUILDING_ID = "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d";
+    public static final String SENSOR_ID = "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11";
+    public static final String ZONE = "FLOOR-3-NORTH";
+    public static final String PROBLEM_JSON = "application/problem+json";
+
+    public static final String RECORD_READING_REQUEST = """
+            {
+              "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+              "buildingId": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d",
+              "zone": "FLOOR-3-NORTH",
+              "vibration": 0.42,
+              "inclination": 0.8,
+              "displacement": 1.2,
+              "timestamp": "2026-10-06T15:30:00Z"
+            }""";
+
+    public static final String RECORDED_READING_RESPONSE = """
+            {
+              "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+              "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+              "buildingId": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d",
+              "zone": "FLOOR-3-NORTH",
+              "vibration": 0.42,
+              "inclination": 0.8,
+              "displacement": 1.2,
+              "timestamp": "2026-10-06T15:30:00Z"
+            }""";
+
+    public static final String ERROR_INVALID_BODY = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "zone is required",
+              "instance": "/api/v1/readings"
+            }""";
+
+    public static final String ERROR_MALFORMED_BODY_FIELD = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "sensorId must be a valid UUID",
+              "instance": "/api/v1/readings"
+            }""";
+
+    public static final String LATEST_READINGS_RESPONSE = """
+            [
+              {
+                "zone": "FLOOR-2-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.31,
+                "inclination": 0.5,
+                "displacement": 0.9
+              },
+              {
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.42,
+                "inclination": 0.8,
+                "displacement": 1.2
+              }
+            ]""";
+
+    public static final String ERROR_MISSING_BUILDING_ID = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "buildingId is required",
+              "instance": "/api/v1/readings/latest"
+            }""";
+
+    public static final String ERROR_MALFORMED_BUILDING_ID = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "buildingId must be a valid UUID",
+              "instance": "/api/v1/readings/latest"
+            }""";
+
+    public static final String ZONE_READINGS_RESPONSE = """
+            [
+              {
+                "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.42,
+                "inclination": 0.8,
+                "displacement": 1.2
+              },
+              {
+                "id": "a1d9f6c3-7e2b-4b05-8c4d-3f6a9e2b1c88",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:29:00Z",
+                "vibration": 0.18,
+                "inclination": 0.7,
+                "displacement": 1.1
+              }
+            ]""";
+
+    public static final String ERROR_MISSING_ZONE = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "zone is required",
+              "instance": "/api/v1/readings"
+            }""";
+
+    public static final String ERROR_INVALID_LIMIT = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "limit must be between 1 and 500",
+              "instance": "/api/v1/readings"
+            }""";
+
+    public static final String HISTORY_RESPONSE = """
+            [
+              {
+                "id": "a1d9f6c3-7e2b-4b05-8c4d-3f6a9e2b1c88",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:29:00Z",
+                "vibration": 0.18,
+                "inclination": 0.7,
+                "displacement": 1.1
+              },
+              {
+                "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.42,
+                "inclination": 0.8,
+                "displacement": 1.2
+              }
+            ]""";
+
+    public static final String ERROR_MISSING_FROM = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "from is required",
+              "instance": "/api/v1/readings/history"
+            }""";
+
+    public static final String ERROR_MALFORMED_TO = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "to must be an ISO-8601 instant, for example 2026-10-06T15:30:00Z",
+              "instance": "/api/v1/readings/history"
+            }""";
+
+    public static final String ERROR_REVERSED_RANGE = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "from must not be after to",
+              "instance": "/api/v1/readings/history"
+            }""";
+
+    private OpenApiExamples() {
+    }
+}
