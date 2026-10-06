@@ -21,6 +21,10 @@ spring:
     hibernate:
       ddl-auto: update
 
+rumi:
+  messaging:
+    enabled: ${MESSAGING_ENABLED:true}
+
 springdoc:
   api-docs:
     path: /v3/api-docs

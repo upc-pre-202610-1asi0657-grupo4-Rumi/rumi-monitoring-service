@@ -9,13 +9,14 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class SensorReadingRecordedPublisherTest {
 
     @Test
     void publishesTheEventUsingTheConfiguredExchangeAndRoutingKey() {
         RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
-        SensorReadingRecordedPublisher publisher = new SensorReadingRecordedPublisher(rabbitTemplate);
+        SensorReadingRecordedPublisher publisher = new SensorReadingRecordedPublisher(rabbitTemplate, true);
         SensorReadingRecorded event = new SensorReadingRecorded(
                 UUID.randomUUID(),
                 UUID.randomUUID(),
@@ -31,5 +32,21 @@ class SensorReadingRecordedPublisherTest {
                 StructuralMonitoringMessagingConfiguration.SENSOR_READING_ROUTING_KEY,
                 event
         );
+    }
+
+    @Test
+    void doesNotPublishWhenMessagingIsDisabled() {
+        RabbitTemplate rabbitTemplate = mock(RabbitTemplate.class);
+        SensorReadingRecordedPublisher publisher = new SensorReadingRecordedPublisher(rabbitTemplate, false);
+
+        publisher.publish(new SensorReadingRecorded(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                Instant.parse("2026-10-06T15:30:00Z"),
+                0.018
+        ));
+
+        verifyNoInteractions(rabbitTemplate);
     }
 }
