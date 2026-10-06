@@ -21,6 +21,7 @@ class SensorReadingRecordedPublisherTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
+                "FLOOR-3-NORTH",
                 Instant.parse("2026-10-06T15:30:00Z"),
                 0.018
         );
@@ -43,6 +44,7 @@ class SensorReadingRecordedPublisherTest {
                 UUID.randomUUID(),
                 UUID.randomUUID(),
                 UUID.randomUUID(),
+                "FLOOR-3-NORTH",
                 Instant.parse("2026-10-06T15:30:00Z"),
                 0.018
         ));
