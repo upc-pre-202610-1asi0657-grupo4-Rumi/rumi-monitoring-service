@@ -9,6 +9,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,5 +73,42 @@ class TimescaleSensorReadingRepositoryTest {
                 .toDomain();
         assertThat(stored.getMeasurement().inclination()).isNull();
         assertThat(stored.getMeasurement().displacement()).isNull();
+    }
+
+    @Test
+    void findsTheLatestReadingOfEachZoneOfTheBuilding() {
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:00:00Z", 0.10);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:30:00Z", 0.42);
+        save(BUILDING_ID, "FLOOR-2-NORTH", "2026-10-06T15:20:00Z", 0.31);
+        save(BUILDING_ID, "FLOOR-2-NORTH", "2026-10-06T15:10:00Z", 0.20);
+        save(UUID.randomUUID(), "FLOOR-3-NORTH", "2026-10-06T16:00:00Z", 0.99);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<SensorReading> latest = repository.findLatestPerZone(BUILDING_ID);
+
+        assertThat(latest).extracting(SensorReading::getZone).containsExactly("FLOOR-2-NORTH", "FLOOR-3-NORTH");
+        assertThat(latest).extracting(reading -> reading.getMeasurement().vibration()).containsExactly(0.31, 0.42);
+    }
+
+    @Test
+    void keepsOneReadingPerZoneWhenTwoSensorsReportAtTheSameInstant() {
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:30:00Z", 0.42);
+        save(BUILDING_ID, "FLOOR-3-NORTH", "2026-10-06T15:30:00Z", 0.40);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(repository.findLatestPerZone(BUILDING_ID)).hasSize(1);
+    }
+
+    @Test
+    void findsNoLatestReadingsForABuildingWithoutReadings() {
+        assertThat(repository.findLatestPerZone(UUID.randomUUID())).isEmpty();
+    }
+
+    private void save(UUID buildingId, String zone, String timestamp, double vibration) {
+        repository.save(SensorReading.record(
+                UUID.randomUUID(), buildingId, zone, Instant.parse(timestamp),
+                new SensorMeasurement(vibration, null, null)));
     }
 }

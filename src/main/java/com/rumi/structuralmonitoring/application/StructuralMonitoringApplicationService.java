@@ -8,6 +8,7 @@ import com.rumi.structuralmonitoring.domain.repository.SensorReadingRepository;
 import com.rumi.structuralmonitoring.infrastructure.messaging.rabbitmq.SensorReadingRecordedPublisher;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -45,5 +46,10 @@ public class StructuralMonitoringApplicationService {
                 reading.getMeasurement().vibration()
         ));
         return reading;
+    }
+
+    /** US09: current state of the building, one reading per zone. Empty if the building has no readings. */
+    public List<SensorReading> getLatestReadingsByZone(UUID buildingId) {
+        return readingRepository.findLatestPerZone(buildingId);
     }
 }

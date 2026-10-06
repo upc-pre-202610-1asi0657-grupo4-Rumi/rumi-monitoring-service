@@ -52,6 +52,42 @@ public final class OpenApiExamples {
               "instance": "/api/v1/readings"
             }""";
 
+    public static final String LATEST_READINGS_RESPONSE = """
+            [
+              {
+                "zone": "FLOOR-2-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.31,
+                "inclination": 0.5,
+                "displacement": 0.9
+              },
+              {
+                "zone": "FLOOR-3-NORTH",
+                "timestamp": "2026-10-06T15:30:00Z",
+                "vibration": 0.42,
+                "inclination": 0.8,
+                "displacement": 1.2
+              }
+            ]""";
+
+    public static final String ERROR_MISSING_BUILDING_ID = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "buildingId is required",
+              "instance": "/api/v1/readings/latest"
+            }""";
+
+    public static final String ERROR_MALFORMED_BUILDING_ID = """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "buildingId must be a valid UUID",
+              "instance": "/api/v1/readings/latest"
+            }""";
+
     private OpenApiExamples() {
     }
 }

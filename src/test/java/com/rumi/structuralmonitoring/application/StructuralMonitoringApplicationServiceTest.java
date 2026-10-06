@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,5 +64,14 @@ class StructuralMonitoringApplicationServiceTest {
 
         assertThat(reading.getMeasurement().inclination()).isNull();
         assertThat(reading.getMeasurement().displacement()).isNull();
+    }
+
+    @Test
+    void returnsTheLatestReadingOfEachZone() {
+        SensorReading reading = SensorReading.record(
+                SENSOR_ID, BUILDING_ID, "FLOOR-3-NORTH", TIMESTAMP, new SensorMeasurement(0.42, 0.8, 1.2));
+        when(repository.findLatestPerZone(BUILDING_ID)).thenReturn(List.of(reading));
+
+        assertThat(service.getLatestReadingsByZone(BUILDING_ID)).containsExactly(reading);
     }
 }
