@@ -18,3 +18,9 @@ rumi:
     url: ${MONITORING_DB_URL:jdbc:postgresql://localhost:5432/sensorreadingsdb}
     username: ${MONITORING_DB_USERNAME:postgres}
     password: ${MONITORING_DB_PASSWORD:postgres}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
