@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Rumi Monitoring Service API",
-        "description": "REST API of the Structural Monitoring bounded context: sensor readings and the digital twin. No REST endpoint is implemented yet; the service currently publishes the SensorReadingRecorded event over RabbitMQ.",
+        "description": "REST API of the Structural Monitoring bounded context: sensor readings (US09, US10). Every recorded reading is announced with the SensorReadingRecorded event over RabbitMQ. Errors use RFC 7807 ProblemDetail. POST /api/v1/readings exists only in the dev profile (IoT simulator).",
         "version": "0.1.0"
     },
     "servers": [
@@ -11,6 +11,683 @@
             "description": "Generated server url"
         }
     ],
-    "paths": {},
-    "components": {}
+    "tags": [
+        {
+            "name": "Sensor readings",
+            "description": "Readings produced by the IoT sensors of a building (US09, US10)"
+        }
+    ],
+    "paths": {
+        "/api/v1/readings": {
+            "get": {
+                "tags": [
+                    "Sensor readings"
+                ],
+                "summary": "List the readings of one zone of a building",
+                "description": "US09. Returns the readings of the zone, newest first. limit caps the number of readings (default 100, maximum 500). An unknown building or zone returns an empty list.",
+                "operationId": "getReadingsByZone",
+                "parameters": [
+                    {
+                        "name": "buildingId",
+                        "in": "query",
+                        "description": "Building whose zone is queried",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d"
+                    },
+                    {
+                        "name": "zone",
+                        "in": "query",
+                        "description": "Zone of the building, named by floor and wing",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 50,
+                            "minLength": 0
+                        },
+                        "example": "FLOOR-3-NORTH"
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "description": "Maximum number of readings to return (1 to 500)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 100,
+                            "maximum": 500,
+                            "minimum": 1
+                        },
+                        "example": 100
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Readings of the zone, newest first",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReadingResponse"
+                                    }
+                                },
+                                "examples": {
+                                    "zoneReadings": {
+                                        "summary": "Two most recent readings of FLOOR-3-NORTH",
+                                        "description": "zoneReadings",
+                                        "value": [
+                                            {
+                                                "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                                                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                                "zone": "FLOOR-3-NORTH",
+                                                "timestamp": "2026-10-06T15:30:00Z",
+                                                "vibration": 0.42,
+                                                "inclination": 0.8,
+                                                "displacement": 1.2
+                                            },
+                                            {
+                                                "id": "a1d9f6c3-7e2b-4b05-8c4d-3f6a9e2b1c88",
+                                                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                                "zone": "FLOOR-3-NORTH",
+                                                "timestamp": "2026-10-06T15:29:00Z",
+                                                "vibration": 0.18,
+                                                "inclination": 0.7,
+                                                "displacement": 1.1
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "buildingId or zone is missing or invalid, or limit is out of range",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                },
+                                "examples": {
+                                    "missingZone": {
+                                        "summary": "zone is missing",
+                                        "description": "missingZone",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "zone is required",
+                                            "instance": "/api/v1/readings"
+                                        }
+                                    },
+                                    "invalidLimit": {
+                                        "summary": "limit is out of range",
+                                        "description": "invalidLimit",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "limit must be between 1 and 500",
+                                            "instance": "/api/v1/readings"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Sensor readings"
+                ],
+                "summary": "Record a simulated sensor reading (dev profile only)",
+                "description": "Stores a reading sent by the IoT simulator and publishes the SensorReadingRecorded event, whose value is the vibration of the reading. When messaging is disabled (dev profile) the event is only logged. This endpoint exists only when the service runs with the dev profile and is not part of the production API.",
+                "operationId": "recordReading",
+                "requestBody": {
+                    "description": "Reading to record. inclination and displacement are optional.",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RecordReadingRequest"
+                            },
+                            "examples": {
+                                "reading": {
+                                    "summary": "Reading of the sample sensor",
+                                    "description": "reading",
+                                    "value": {
+                                        "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                        "buildingId": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d",
+                                        "zone": "FLOOR-3-NORTH",
+                                        "vibration": 0.42,
+                                        "inclination": 0.8,
+                                        "displacement": 1.2,
+                                        "timestamp": "2026-10-06T15:30:00Z"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Reading stored and event published",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RecordedReadingResponse"
+                                },
+                                "examples": {
+                                    "recorded": {
+                                        "summary": "Stored reading with its generated id",
+                                        "description": "recorded",
+                                        "value": {
+                                            "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                                            "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                            "buildingId": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d",
+                                            "zone": "FLOOR-3-NORTH",
+                                            "vibration": 0.42,
+                                            "inclination": 0.8,
+                                            "displacement": 1.2,
+                                            "timestamp": "2026-10-06T15:30:00Z"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The body is missing, is not valid JSON or a field is missing or malformed",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                },
+                                "examples": {
+                                    "missingField": {
+                                        "summary": "A required field is missing",
+                                        "description": "missingField",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "zone is required",
+                                            "instance": "/api/v1/readings"
+                                        }
+                                    },
+                                    "malformedField": {
+                                        "summary": "A field has the wrong format",
+                                        "description": "malformedField",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "sensorId must be a valid UUID",
+                                            "instance": "/api/v1/readings"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/readings/latest": {
+            "get": {
+                "tags": [
+                    "Sensor readings"
+                ],
+                "summary": "Get the latest reading of each zone of a building",
+                "description": "US09. Returns the most recent reading of every zone of the building, ordered by zone. The building is owned by rumi-building-service and is not checked here: a building without readings returns an empty list.",
+                "operationId": "getLatestReadings",
+                "parameters": [
+                    {
+                        "name": "buildingId",
+                        "in": "query",
+                        "description": "Building whose zones are queried",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Latest reading per zone (empty list if the building has no readings)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ZoneReadingResponse"
+                                    }
+                                },
+                                "examples": {
+                                    "latestReadings": {
+                                        "summary": "Two zones of the sample building",
+                                        "description": "latestReadings",
+                                        "value": [
+                                            {
+                                                "zone": "FLOOR-2-NORTH",
+                                                "timestamp": "2026-10-06T15:30:00Z",
+                                                "vibration": 0.31,
+                                                "inclination": 0.5,
+                                                "displacement": 0.9
+                                            },
+                                            {
+                                                "zone": "FLOOR-3-NORTH",
+                                                "timestamp": "2026-10-06T15:30:00Z",
+                                                "vibration": 0.42,
+                                                "inclination": 0.8,
+                                                "displacement": 1.2
+                                            }
+                                        ]
+                                    },
+                                    "noReadings": {
+                                        "summary": "Building without readings",
+                                        "description": "noReadings",
+                                        "value": []
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "buildingId is missing or is not a UUID",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                },
+                                "examples": {
+                                    "missingBuildingId": {
+                                        "summary": "buildingId is missing",
+                                        "description": "missingBuildingId",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "buildingId is required",
+                                            "instance": "/api/v1/readings/latest"
+                                        }
+                                    },
+                                    "malformedBuildingId": {
+                                        "summary": "buildingId is not a UUID",
+                                        "description": "malformedBuildingId",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "buildingId must be a valid UUID",
+                                            "instance": "/api/v1/readings/latest"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/readings/history": {
+            "get": {
+                "tags": [
+                    "Sensor readings"
+                ],
+                "summary": "Get the readings history of a building",
+                "description": "US10. Returns every reading of the building taken between from and to, both inclusive, oldest first. Both bounds are ISO-8601 instants in UTC.",
+                "operationId": "getHistory",
+                "parameters": [
+                    {
+                        "name": "buildingId",
+                        "in": "query",
+                        "description": "Building whose readings are queried",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "example": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d"
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "description": "Start of the range, inclusive (ISO-8601 instant)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "example": "2026-10-06T15:00:00Z"
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "description": "End of the range, inclusive (ISO-8601 instant)",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "date-time"
+                        },
+                        "example": "2026-10-06T16:00:00Z"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Readings in the range, oldest first (empty list if there are none)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ReadingResponse"
+                                    }
+                                },
+                                "examples": {
+                                    "history": {
+                                        "summary": "Readings between 15:00 and 16:00 UTC",
+                                        "description": "history",
+                                        "value": [
+                                            {
+                                                "id": "a1d9f6c3-7e2b-4b05-8c4d-3f6a9e2b1c88",
+                                                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                                "zone": "FLOOR-3-NORTH",
+                                                "timestamp": "2026-10-06T15:29:00Z",
+                                                "vibration": 0.18,
+                                                "inclination": 0.7,
+                                                "displacement": 1.1
+                                            },
+                                            {
+                                                "id": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30",
+                                                "sensorId": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11",
+                                                "zone": "FLOOR-3-NORTH",
+                                                "timestamp": "2026-10-06T15:30:00Z",
+                                                "vibration": 0.42,
+                                                "inclination": 0.8,
+                                                "displacement": 1.2
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "A parameter is missing or malformed, or from is after to",
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ProblemDetail"
+                                },
+                                "examples": {
+                                    "missingFrom": {
+                                        "summary": "from is missing",
+                                        "description": "missingFrom",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "from is required",
+                                            "instance": "/api/v1/readings/history"
+                                        }
+                                    },
+                                    "malformedTo": {
+                                        "summary": "to is not an ISO-8601 instant",
+                                        "description": "malformedTo",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "to must be an ISO-8601 instant, for example 2026-10-06T15:30:00Z",
+                                            "instance": "/api/v1/readings/history"
+                                        }
+                                    },
+                                    "reversedRange": {
+                                        "summary": "from is after to",
+                                        "description": "reversedRange",
+                                        "value": {
+                                            "type": "about:blank",
+                                            "title": "Bad Request",
+                                            "status": 400,
+                                            "detail": "from must not be after to",
+                                            "instance": "/api/v1/readings/history"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "RecordReadingRequest": {
+                "type": "object",
+                "description": "Sensor reading produced by the IoT simulator",
+                "properties": {
+                    "sensorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Sensor that produced the reading",
+                        "example": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11"
+                    },
+                    "buildingId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Building where the sensor is installed",
+                        "example": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d"
+                    },
+                    "zone": {
+                        "type": "string",
+                        "description": "Zone of the building, named by floor and wing",
+                        "example": "FLOOR-3-NORTH",
+                        "maxLength": 50,
+                        "minLength": 0
+                    },
+                    "vibration": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Vibration measured by the sensor",
+                        "example": 0.42
+                    },
+                    "inclination": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Inclination measured by the sensor (optional)",
+                        "example": 0.8
+                    },
+                    "displacement": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Displacement measured by the sensor (optional)",
+                        "example": 1.2
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When the reading was taken (ISO-8601 instant)",
+                        "example": "2026-10-06T15:30:00Z"
+                    }
+                },
+                "required": [
+                    "buildingId",
+                    "sensorId",
+                    "timestamp",
+                    "vibration",
+                    "zone"
+                ]
+            },
+            "RecordedReadingResponse": {
+                "type": "object",
+                "description": "Sensor reading as stored by the service",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Reading id",
+                        "example": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30"
+                    },
+                    "sensorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Sensor that produced the reading",
+                        "example": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11"
+                    },
+                    "buildingId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Building where the sensor is installed",
+                        "example": "7a9b3c1d-2e4f-4b6a-8c0d-1e2f3a4b5c6d"
+                    },
+                    "zone": {
+                        "type": "string",
+                        "description": "Zone of the building",
+                        "example": "FLOOR-3-NORTH"
+                    },
+                    "vibration": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Vibration",
+                        "example": 0.42
+                    },
+                    "inclination": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Inclination, null when not measured",
+                        "example": 0.8
+                    },
+                    "displacement": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Displacement, null when not measured",
+                        "example": 1.2
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When the reading was taken",
+                        "example": "2026-10-06T15:30:00Z"
+                    }
+                }
+            },
+            "ProblemDetail": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "format": "int32"
+                    },
+                    "detail": {
+                        "type": "string"
+                    },
+                    "instance": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "properties": {
+                        "type": "object",
+                        "additionalProperties": {}
+                    }
+                }
+            },
+            "ReadingResponse": {
+                "type": "object",
+                "description": "Sensor reading of a zone",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Reading id",
+                        "example": "e4b7c2a9-1f3d-4c8e-9a6b-2d5f8e1c7b30"
+                    },
+                    "sensorId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Sensor that produced the reading",
+                        "example": "5d1c2f0e-8f4a-4a53-9a7e-0f3b1c9d7a11"
+                    },
+                    "zone": {
+                        "type": "string",
+                        "description": "Zone of the building",
+                        "example": "FLOOR-3-NORTH"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When the reading was taken",
+                        "example": "2026-10-06T15:30:00Z"
+                    },
+                    "vibration": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Vibration",
+                        "example": 0.42
+                    },
+                    "inclination": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Inclination, null when not measured",
+                        "example": 0.8
+                    },
+                    "displacement": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Displacement, null when not measured",
+                        "example": 1.2
+                    }
+                }
+            },
+            "ZoneReadingResponse": {
+                "type": "object",
+                "description": "Latest reading of one zone of the building",
+                "properties": {
+                    "zone": {
+                        "type": "string",
+                        "description": "Zone of the building",
+                        "example": "FLOOR-3-NORTH"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "When the reading was taken",
+                        "example": "2026-10-06T15:30:00Z"
+                    },
+                    "vibration": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Vibration",
+                        "example": 0.42
+                    },
+                    "inclination": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Inclination, null when not measured",
+                        "example": 0.8
+                    },
+                    "displacement": {
+                        "type": "number",
+                        "format": "double",
+                        "description": "Displacement, null when not measured",
+                        "example": 1.2
+                    }
+                }
+            }
+        }
+    }
 }
